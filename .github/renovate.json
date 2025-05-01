@@ -1,5 +1,20 @@
 {
-  "extends": ["config:base", "github>aquaproj/aqua-renovate-config#2.7.5"],
-  "automerge": true
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    "github>aquaproj/aqua-renovate-config",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["terraform"],
+      "groupName": "terraform dependencies"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions"
+    }
+  ],
+  "timezone": "Asia/Tokyo",
+  "prHourlyLimit": 10
 }
-

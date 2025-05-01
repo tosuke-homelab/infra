@@ -1,4 +1,5 @@
 terraform {
+  required_version = ">= 1.11.0"
   backend "gcs" {
     bucket = "tosuke-homelab-tfstate"
     prefix = "gcloud"

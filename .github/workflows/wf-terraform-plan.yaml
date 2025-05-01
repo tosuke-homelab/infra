@@ -19,13 +19,13 @@ jobs:
       run:
         working-directory: terraform/${{ inputs.target }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.0.0
       - uses: aquaproj/aqua-installer@v3.1.2
         with:
           aqua_version: v2.50.0
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v2.0.0
         with:
           workload_identity_provider: ${{ vars.GCLOUD_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCLOUD_PLAN_SA }}

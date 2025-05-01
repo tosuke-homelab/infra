@@ -15,7 +15,7 @@ jobs:
     outputs:
       terraform-targets: ${{ steps.terraform-filter.outputs.changes }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.0.0
       - uses: dorny/paths-filter@v3.0.2
         id: terraform-filter
         with:
