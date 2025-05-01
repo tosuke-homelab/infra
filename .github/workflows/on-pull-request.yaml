@@ -2,6 +2,7 @@ name: On Pull Request
 
 on:
   pull_request:
+  merge_group:
 
 jobs:
   status-check:
@@ -13,11 +14,28 @@ jobs:
     steps: [{ run: exit 1 }]
     needs: [terraform-ci]
 
+  terraform-changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      targets: ${{ steps.filter.outputs.changes }}
+    steps:
+      - uses: dorny/paths-filter@v3.0.2
+        id: filter
+        with:
+          filters: |
+            gcloud:
+              - aqua.yaml
+              - .github/workflows
+              - terraform/gcloud
+
   terraform-ci:
+    needs: [terraform-changes]
     strategy:
       fail-fast: false
       matrix:
-        target: [gcloud]
+        target: ${{ fromJSON(needs.terraform-changes.outputs.targets) }}
     uses: ./.github/workflows/wf-terraform-plan.yaml
     with:
       target: ${{ matrix.target }}
