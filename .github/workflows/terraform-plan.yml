@@ -1,0 +1,44 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/gcloud/**'
+      - '.github/workflows/terraform-plan.yml'
+      - 'aqua.yaml'
+
+jobs:
+  terraform-plan:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+
+    defaults:
+      run:
+        working-directory: terraform/gcloud
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up aqua
+        uses: aquaproj/aqua-installer@v3.1.2
+        with:
+          aqua_version: v2.50.0
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCLOUD_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCLOUD_PLAN_SA }}
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan & PR Comment
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: tfcmt plan -- terraform plan -no-color
