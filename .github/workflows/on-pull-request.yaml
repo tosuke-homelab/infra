@@ -1,0 +1,31 @@
+name: On Pull Request
+
+on:
+  pull_request:
+
+jobs:
+  status-check:
+    name: Status Check
+    runs-on: ubuntu-latest
+    if: failure()
+    timeout-minutes: 10
+    permissions: {}
+    steps: [{ run: exit 1 }]
+    needs: [terraform-ci]
+
+  terraform-ci:
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [gcloud]
+    uses: ./.github/workflows/wf-terraform-plan.yaml
+    with:
+      target: ${{ matrix.target }}
+
+  terraform-apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - run: echo "This is dummy job"
+
