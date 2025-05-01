@@ -11,19 +11,27 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.0.0
       - uses: aquaproj/aqua-installer@v3.1.2
         with:
           aqua_version: v2.50.0
 
       - name: Run tflint
+        id: tflint
         continue-on-error: true
         uses: suzuki-shunsuke/github-action-tflint@v1.2.1
         with:
           working_directory: terraform/${{ inputs.target }}
 
       - name: Run tfsec
+        id: tfsec
         continue-on-error: true
         uses: suzuki-shunsuke/github-action-tfsec@v1.0.0
         with:
           working_directory: terraform/${{ inputs.target }}
+          
+      - name: Check lint results
+        if: steps.tflint.outcome == 'failure' || steps.tfsec.outcome == 'failure'
+        run: |
+          echo "::error::Terraform lint checks failed"
+          exit 1
