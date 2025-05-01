@@ -2,23 +2,24 @@ name: Terraform Plan
 
 on:
   pull_request:
-    paths:
-      - 'terraform/gcloud/**'
-      - '.github/workflows/terraform-plan.yml'
-      - 'aqua.yaml'
 
 jobs:
   terraform-plan:
     runs-on: ubuntu-latest
-
     permissions:
       id-token: write
       contents: read
+      issues: write
       pull-requests: write
+
+    strategy:
+      matrix:
+        target:
+          - gcloud
 
     defaults:
       run:
-        working-directory: terraform/gcloud
+        working-directory: terraform/${{ matrix.target }}
 
     steps:
       - name: Checkout
@@ -41,4 +42,4 @@ jobs:
       - name: Terraform Plan & PR Comment
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: tfcmt plan -- terraform plan -no-color
+        run: tfcmt plan --patch --skip-no-changes --var 'target:${{ matrix.target }}' -- terraform plan -no-color
