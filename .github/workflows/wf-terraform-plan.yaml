@@ -1,32 +1,26 @@
 name: Terraform Plan
 
 on:
-  pull_request:
+  workflow_call:
+    inputs:
+      target:
+        required: true
+        type: string
 
 jobs:
-  terraform-plan:
+  plan:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
       issues: write
       pull-requests: write
-
-    strategy:
-      matrix:
-        target:
-          - gcloud
-
     defaults:
       run:
-        working-directory: terraform/${{ matrix.target }}
-
+        working-directory: terraform/${{ inputs.target }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up aqua
-        uses: aquaproj/aqua-installer@v3.1.2
+      - uses: actions/checkout@v4
+      - uses: aquaproj/aqua-installer@v3.1.2
         with:
           aqua_version: v2.50.0
 
@@ -42,4 +36,4 @@ jobs:
       - name: Terraform Plan & PR Comment
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: tfcmt plan --patch --skip-no-changes --var 'target:${{ matrix.target }}' -- terraform plan -no-color
+        run: tfcmt plan --patch --skip-no-changes --var 'target:${{ inputs.target }}' -- terraform plan -no-color

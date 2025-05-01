@@ -13,3 +13,6 @@ registries:
 packages:
 - name: hashicorp/terraform@v1.11.4
 - name: suzuki-shunsuke/tfcmt@v4.14.7
+- name: reviewdog/reviewdog@v0.20.3
+- name: terraform-linters/tflint@v0.56.0
+- name: aquasecurity/tfsec@v1.28.13

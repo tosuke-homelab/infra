@@ -1,0 +1,42 @@
+name: On Merge Group
+
+on:
+  merge_group:
+
+jobs:
+  status-check:
+    name: Status Check
+    runs-on: ubuntu-latest
+    if: failure()
+    timeout-minutes: 10
+    permissions: {}
+    steps: [{ run: exit 1 }]
+    needs:
+      - terraform-lint
+      - terraform-apply
+
+  changes:
+    uses: ./.github/workflows/wf-changes.yaml
+
+  terraform-lint:
+    name: Terraform Lint
+    needs: [changes]
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(needs.changes.outputs.terraform-targets) }}
+    uses: ./.github/workflows/wf-terraform-lint.yaml
+    with:
+      target: ${{ matrix.target }}
+
+  terraform-apply:
+    name: Terraform Apply
+    needs: [changes]
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(needs.changes.outputs.terraform-targets) }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Terraform Apply"

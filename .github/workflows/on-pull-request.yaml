@@ -1,0 +1,41 @@
+name: On Pull Request
+
+on:
+  pull_request:
+
+jobs:
+  status-check:
+    name: Status Check
+    runs-on: ubuntu-latest
+    if: failure()
+    timeout-minutes: 10
+    permissions: {}
+    steps: [{ run: exit 1 }]
+    needs:
+      - terraform-lint
+      - terraform-plan
+
+  changes:
+    uses: ./.github/workflows/wf-changes.yaml
+
+  terraform-lint:
+    name: Terraform Lint
+    needs: [changes]
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(needs.changes.outputs.terraform-targets) }}
+    uses: ./.github/workflows/wf-terraform-lint.yaml
+    with:
+      target: ${{ matrix.target }}
+  
+  terraform-plan:
+    name: Terraform Plan
+    needs: [changes]
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(needs.changes.outputs.terraform-targets) }}
+    uses: ./.github/workflows/wf-terraform-plan.yaml
+    with:
+      target: ${{ matrix.target }}
