@@ -1,7 +1,7 @@
-name: On Pull Request
+name: On Merge Group
 
 on:
-  pull_request:
+  merge_group:
 
 jobs:
   status-check:
@@ -13,7 +13,7 @@ jobs:
     steps: [{ run: exit 1 }]
     needs:
       - terraform-lint
-      - terraform-plan
+      - terraform-apply
 
   changes:
     uses: ./.github/workflows/wf-changes.yaml
@@ -28,14 +28,15 @@ jobs:
     uses: ./.github/workflows/wf-terraform-lint.yaml
     with:
       target: ${{ matrix.target }}
-  
-  terraform-plan:
-    name: Terraform Plan
+
+  terraform-apply:
+    name: Terraform Apply
     needs: [changes]
     strategy:
       fail-fast: false
       matrix:
         target: ${{ fromJSON(needs.changes.outputs.terraform-targets) }}
-    uses: ./.github/workflows/wf-terraform-plan.yaml
-    with:
-      target: ${{ matrix.target }}
+
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Terraform Apply"

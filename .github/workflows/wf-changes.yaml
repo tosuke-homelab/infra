@@ -1,0 +1,24 @@
+name: Changes
+
+on:
+  workflow_call:
+    outputs:
+      terraform-targets:
+        value: ${{ jobs.changes.outputs.terraform-targets }}
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      terraform-targets: ${{ steps.terraform-filter.outputs.changes }}
+    steps:
+      - uses: dorny/paths-filter@v3.0.2
+        id: terraform-filter
+        with:
+          filters: |
+            gcloud:
+              - aqua.yaml
+              - .github/workflows
+              - terraform/gcloud
