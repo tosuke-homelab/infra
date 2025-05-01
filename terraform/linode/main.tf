@@ -1,10 +1,7 @@
 terraform {
-  backend "remote" {
-    organization = "tosuke-homelab"
-
-    workspaces {
-      name = "infra-linode"
-    }
+  backend "gcs" {
+    bucket  = "tosuke-homelab-tfstate"
+    prefix  = "linode"
   }
 
   required_providers {
@@ -54,7 +51,7 @@ resource "linode_instance" "border" {
   label = each.key
   tags  = ["border"]
 
-  region = "jp-tyo-3"
+  region = data.linode_region.region.id
   type   = "g6-nanode-1"
 
   metadata {
