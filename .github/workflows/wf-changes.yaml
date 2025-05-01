@@ -22,5 +22,5 @@ jobs:
           filters: |
             gcloud:
               - aqua.yaml
-              - .github/workflows
-              - terraform/gcloud
+              - .github/workflows/**
+              - terraform/gcloud/**
