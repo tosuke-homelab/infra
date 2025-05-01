@@ -1,0 +1,24 @@
+#cloud-config
+fqdn: ${fqdn}
+hostname: ${hostname}
+runcmd:
+  - rm /etc/systemd/network/05-eth0.network
+  - netplan generate
+  - netplan apply
+  - NIX_CHANNEL=nixos-23.05 /usr/local/bin/nixos-infect 2>&1 | tee /tmp/infect.log
+write_files:
+  - path: /usr/local/bin/nixos-infect
+    permissions: "0755"
+    encoding: gzip+base64
+    content: ${nixos_infect}
+  - path: /etc/netplan/01-netcfg.yaml
+    content: |
+      network:
+        version: 2
+        renderer: networkd
+        ethernets:
+          eth0:
+            dhcp4: false
+            accept-ra: true
+            nameservers:
+              addresses: ${resolvers}
