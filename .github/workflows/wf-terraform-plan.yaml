@@ -36,4 +36,11 @@ jobs:
       - name: Terraform Plan & PR Comment
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: tfcmt plan --patch --skip-no-changes --var 'target:${{ inputs.target }}' -- terraform plan -no-color
+        run: tfcmt plan --patch --skip-no-changes --var 'target:${{ inputs.target }}' -- terraform plan -no-color -out=tfplan
+
+      - name: Upload Terraform Plan
+        uses: actions/upload-artifact@v4.0.0
+        with:
+          name: tfplan-${{ inputs.target }}
+          path: terraform/${{ inputs.target }}/tfplan
+          retention-days: 7
