@@ -10,10 +10,12 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pull-requests: read
     outputs:
       terraform-targets: ${{ steps.terraform-filter.outputs.changes }}
     steps:
+      - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3.0.2
         id: terraform-filter
         with:
