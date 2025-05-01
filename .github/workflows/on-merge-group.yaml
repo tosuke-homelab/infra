@@ -12,6 +12,7 @@ jobs:
     permissions: {}
     steps: [{ run: exit 1 }]
     needs:
+      - changes
       - terraform-lint
       - terraform-apply
 
