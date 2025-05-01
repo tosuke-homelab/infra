@@ -36,3 +36,9 @@ resource "google_service_account" "gha_terraform_apply" {
   account_id   = "gha-terraform-apply"
   display_name = "GitHub Actions that runs terraform apply"
 }
+
+resource "google_service_account_iam_member" "gha_terraform_apply_infra_repo" {
+  service_account_id = google_service_account.gha_terraform_apply.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${local.github_pool_name}/attribute.repository/tosuke-homelab/infra"
+}
