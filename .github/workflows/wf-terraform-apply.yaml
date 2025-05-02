@@ -1,0 +1,116 @@
+name: Terraform Apply
+on:
+  workflow_call:
+    inputs:
+      target:
+        required: true
+        type: string
+
+jobs:
+  find-plan:
+    runs-on: ubuntu-latest
+    outputs:
+      pr_number: ${{ steps.pr-number.outputs.result }}
+      artifact_id: ${{ steps.plan-artifact.outputs.result }}
+    steps:
+      - name: Parse PR Number
+        id: pr-number
+        uses: actions/github-script@v7.0.1
+        with:
+          result-encoding: string
+          script: |
+            const match = context.ref.match(/refs\/heads\/gh-readonly-queue\/.*\/pr-(\d+)-.*/);
+            if (!match) {
+              throw new Error(`Could not extract PR number from ref: ${context.payload.ref}`);
+            }
+            return match[1];
+      - name: Find tfplan for target
+        id: plan-artifact
+        uses: actions/github-script@v7.0.1
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const workflow = 'on-pull-request.yaml';
+            const artifactName = `tfplan-${{ inputs.target }}`;
+            const prNumber = parseInt("${{ steps.pr-number.outputs.result }}", 10);
+
+            const pr = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: prNumber,
+            });
+
+            let runID;
+            for await (const runs of github.paginate.iterator(github.rest.actions.listWorkflowRuns, {
+              owner,
+              repo,
+              workflow_id: workflow,
+              head_sha: pr.data.head.sha,
+            })) {
+              for (const run of runs.data) {
+                if (run.conclusion === 'success' || run.status === 'completed') {
+                  runID = run.id;
+                  break;
+                }
+              }
+            }
+            if (!runID) {
+              throw new Error(`No successful workflow run found for PR #${prNumber}`);
+            }
+
+            let artifactID = "";
+            for await (const artifacts of github.paginate.iterator(github.rest.actions.listWorkflowRunArtifacts, {
+              owner,
+              repo,
+              run_id: runID,
+            })) {
+              for (const artifact of artifacts.data) {
+                if (artifact.name === artifactName) {
+                  artifactID = artifact.id;
+                  break;
+                }
+              }
+            }
+            return artifactID;
+
+  apply:
+    runs-on: ubuntu-latest
+    needs: [find-plan]
+    if: ${{ needs.find-plan.outputs.artifact_id != '' }}
+    permissions:
+      id-token: write
+      contents: read
+      issues: write
+      pull-requests: write
+    defaults:
+      run:
+        working-directory: terraform/${{ inputs.target }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: aquaproj/aqua-installer@5e54e5cee8a95ee2ce7c04cb993da6dfad13e59c # v3.1.2
+        with:
+          aqua_version: v2.50.0
+
+      - name: Download Terraform Plan
+        id: download-tfplan
+        uses: actions/download-artifact@v4.3.0
+        with:
+          artifact_ids: ${{ needs.find-plan.outputs.artifact_id }}
+          path: terraform/${{ inputs.target }}
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
+        with:
+          workload_identity_provider: ${{ vars.GCLOUD_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCLOUD_APPLY_SA }}
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply & PR Comment
+        if: ${{ steps.download-tfplan.outputs.found_artifact == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tfcmt apply --pr '${{ needs.find-plan.outputs.pr_number }}' --var 'target:${{ inputs.target }}' \
+            -- terraform apply -no-color tfplan

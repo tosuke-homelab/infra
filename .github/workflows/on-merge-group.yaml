@@ -12,7 +12,6 @@ jobs:
     permissions: {}
     steps: [{ run: exit 1 }]
     needs:
-      - changes
       - terraform-lint
       - terraform-apply
 
@@ -37,7 +36,6 @@ jobs:
       fail-fast: false
       matrix:
         target: ${{ fromJSON(needs.changes.outputs.terraform-targets) }}
-
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Terraform Apply"
+    uses: ./.github/workflows/wf-terraform-apply.yaml
+    with:
+      target: ${{ matrix.target }}
