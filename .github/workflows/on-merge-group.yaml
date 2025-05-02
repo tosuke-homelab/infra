@@ -59,7 +59,7 @@ jobs:
         uses: dawidd6/action-download-artifact@v9
         with:
           name: tfplan-${{ matrix.target }}
-          workflow: Terraform Plan
+          workflow: on-pull-request.yaml
           pr: ${{ steps.pr-number.outputs.pr_number }}
           path: terraform/${{ matrix.target }}
           if_no_artifact_found: ignore
