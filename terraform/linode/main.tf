@@ -1,4 +1,5 @@
 terraform {
+  required_version = ">= 1.11.0"
   backend "gcs" {
     bucket  = "tosuke-homelab-tfstate"
     prefix  = "linode"
@@ -10,7 +11,8 @@ terraform {
       version = "2.38.0"
     }
     http = {
-      source = "hashicorp/http"
+      source  = "hashicorp/http"
+      version = "3.5.0"
     }
   }
 }
@@ -102,7 +104,7 @@ resource "linode_instance_disk" "border_boot" {
   for_each        = local.border_nodes
   linode_id       = linode_instance.border[each.key].id
   label           = "boot"
-  size            = linode_instance.border[each.key].specs.0.disk - 512
+  size            = linode_instance.border[each.key].specs[0].disk - 512
   image           = "linode/ubuntu24.04"
   authorized_keys = [for key in data.linode_sshkeys.ssh_keys.sshkeys : key.ssh_key]
 }
