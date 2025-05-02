@@ -17,7 +17,7 @@ resource "google_iam_workload_identity_pool_provider" "github_actions" {
   attribute_mapping = {
     "google.subject"             = "assertion.sub"
     "attribute.repository"       = "assertion.repository"
-    "attribute.job_workflow_ref" = "assertion.job_workflow_ref"
+    "attribute.repo_and_job"     = "assertion.repository + ';' + assertion.job_workflow_ref"
   }
   attribute_condition = "assertion.repository.startsWith('tosuke-homelab/')"
 }
@@ -41,5 +41,5 @@ resource "google_service_account" "gha_terraform_apply" {
 resource "google_service_account_iam_member" "gha_terraform_apply_infra_apply_job" {
   service_account_id = google_service_account.gha_terraform_apply.name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/${local.github_pool_name}/attribute.job_workflow_ref/tosuke-homelab/infra/.github/workflows/wf-terraform-apply.yaml@refs/heads/main"
+  member             = "principalSet://iam.googleapis.com/${local.github_pool_name}/attribute.repo_and_job/tosuke-homelab/infra;tosuke-homelab/infra/.github/workflows/wf-terraform-apply.yaml@refs/heads/main"
 }
