@@ -1,0 +1,61 @@
+name: Terraform Apply
+on:
+  workflow_call:
+    inputs:
+      target:
+        required: true
+        type: string
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      issues: write
+      pull-requests: write
+    defaults:
+      run:
+        working-directory: terraform/${{ inputs.target }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: aquaproj/aqua-installer@5e54e5cee8a95ee2ce7c04cb993da6dfad13e59c # v3.1.2
+        with:
+          aqua_version: v2.50.0
+
+      - name: Extract PR number
+        id: pr-number
+        run: |
+          pr_number=$(echo "$GITHUB_REF" | sed -n 's#refs/heads/gh-readonly-queue/.*/pr-\([0-9]*\)-.*#\1#p')
+          if [[ -z "$pr_number" ]]; then
+            echo "Could not extract PR number from ref: $GITHUB_REF"
+            exit 1
+          fi
+          echo "Original PR Number: $pr_number"
+          echo "pr_number=$pr_number" >> "$GITHUB_OUTPUT"
+      - name: Download Terraform Plan
+        id: download-tfplan
+        uses: dawidd6/action-download-artifact@v9
+        with:
+          name: tfplan-${{ inputs.target }}
+          workflow: on-pull-request.yaml
+          pr: ${{ steps.pr-number.outputs.pr_number }}
+          path: terraform/${{ inputs.target }}
+          if_no_artifact_found: ignore
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
+        with:
+          workload_identity_provider: ${{ vars.GCLOUD_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCLOUD_APPLY_SA }}
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply & PR Comment
+        if: ${{ steps.download-tfplan.outputs.found_artifact == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tfcmt apply --pr '${{ steps.pr-number.outputs.pr-number }}' --var 'target:${{ inputs.target }}' \
+            -- terraform apply -no-color tfplan
