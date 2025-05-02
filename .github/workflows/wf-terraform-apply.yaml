@@ -103,7 +103,7 @@ jobs:
           aqua_version: v2.50.0
 
       - name: Download Terraform Plan
-        uses: dawidd6/action-download-artifact@v9
+        uses: dawidd6/action-download-artifact@07ab29fd4a977ae4d2b275087cf67563dfdf0295 # v9
         with:
           run_id: ${{ needs.find-plan.outputs.run_id }}
           name: tfplan-${{ inputs.target }}
