@@ -11,8 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       pr_number: ${{ steps.pr-number.outputs.result }}
-      run_id: ${{ steps.plan-run.outputs.result }}
-      artifact_id: ${{ steps.plan-artifact.outputs.result }}
+      artifact_url: ${{ steps.plan-artifact.outputs.result }}
     steps:
       - name: Parse PR Number
         id: pr-number
@@ -26,14 +25,16 @@ jobs:
             }
             return match[1];
 
-      - name: Find run for workflow
-        id: plan-run
+      - name: Find artifact
+        id: plan-artifact
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
+          result-encoding: string
           script: |
             const { owner, repo } = context.repo;
             const workflow = 'on-pull-request.yaml';
             const prNumber = parseInt("${{ steps.pr-number.outputs.result }}", 10);
+            const artifactName = `tfplan-${{ inputs.target }}`;
 
             const pr = await github.rest.pulls.get({
               owner,
@@ -58,18 +59,8 @@ jobs:
             if (!runID) {
               throw new Error(`No successful workflow run found for PR #${prNumber}`);
             }
-            return runID;
 
-      - name: Find artifact for target
-        id: plan-artifact
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
-        with:
-          script: |
-            const { owner, repo } = context.repo;
-            const runID = parseInt("${{ steps.plan-run.outputs.result }}", 10);
-            const artifactName = `tfplan-${{ inputs.target }}`;
-
-            let artifactID = "";
+            let artifactURL = "";
             for await (const artifacts of github.paginate.iterator(github.rest.actions.listWorkflowRunArtifacts, {
               owner,
               repo,
@@ -77,17 +68,17 @@ jobs:
             })) {
               for (const artifact of artifacts.data) {
                 if (artifact.name === artifactName) {
-                  artifactID = artifact.id;
+                  artifactURL = artifact.archive_download_url;
                   break;
                 }
               }
             }
-            return artifactID;
+            return artifactURL;
 
   apply:
     runs-on: ubuntu-latest
     needs: [find-plan]
-    if: ${{ needs.find-plan.outputs.artifact_id != '' }}
+    if: ${{ needs.find-plan.outputs.artifact_url != '' }}
     permissions:
       id-token: write
       contents: read
@@ -103,11 +94,15 @@ jobs:
           aqua_version: v2.50.0
 
       - name: Download Terraform Plan
-        uses: dawidd6/action-download-artifact@07ab29fd4a977ae4d2b275087cf67563dfdf0295 # v9
-        with:
-          run_id: ${{ needs.find-plan.outputs.run_id }}
-          name: tfplan-${{ inputs.target }}
-          path: terraform/${{ inputs.target }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACT_URL: ${{ needs.find-plan.outputs.artifact_url }}
+        run: |
+          curl -L -o /tmp/tfplan.zip \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "$ARTIFACT_URL"
+          unzip -d . /tmp/tfplan.zip
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
