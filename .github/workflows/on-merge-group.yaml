@@ -68,7 +68,7 @@ jobs:
         uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
         with:
           workload_identity_provider: ${{ vars.GCLOUD_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCLOUD_PLAN_SA }}
+          service_account: ${{ vars.GCLOUD_APPLY_SA }}
 
       - name: Terraform Init
         run: terraform init
