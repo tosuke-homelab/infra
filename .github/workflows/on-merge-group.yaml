@@ -36,6 +36,6 @@ jobs:
       fail-fast: false
       matrix:
         target: ${{ fromJSON(needs.changes.outputs.terraform-targets) }}
-    uses: ./.github/workflows/wf-terraform-apply.yaml
+    uses: tosuke-homelab/infra/.github/workflows/wf-terraform-apply.yaml@main
     with:
       target: ${{ matrix.target }}
