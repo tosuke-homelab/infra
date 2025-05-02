@@ -1,0 +1,35 @@
+name: Actionlint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    name: Actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: filter
+        with:
+          filters: |
+            actionlint:
+              - .github/workflows/**
+      - uses: aquaproj/aqua-installer@5e54e5cee8a95ee2ce7c04cb993da6dfad13e59c # v3.1.2
+        if: ${{ steps.filter.outputs.actionlint == 'true' }}
+        with:
+          aqua_version: v2.50.0
+      - name: Run actionlint
+        if: ${{ steps.filter.outputs.actionlint == 'true' }}
+        uses: suzuki-shunsuke/github-action-actionlint@v0.1.2
+
+
+
+
