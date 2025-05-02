@@ -7,8 +7,82 @@ on:
         type: string
 
 jobs:
+  find-plan:
+    runs-on: ubuntu-latest
+    outputs:
+      pr_number: ${{ fromJSON(steps.find-plan-run.outputs.result).pr_number }}
+      found_artifact: ${{ fromJSON(steps.find-plan-run.outputs.result).found_artifact }}
+      artifact_id: ${{ fromJSON(steps.find-plan-run.outputs.result).artifact_id }}
+    steps:
+      - name: Find tfplan for target
+        id: find-plan-run
+        uses: actions/github-script@v7.0.1
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const workflow = 'on-pull-request.yaml';
+            const artifactName = `tfplan-${{ inputs.target }}`;
+
+            const match = context.payload.ref.match(/refs\/heads\/gh-readonly-queue\/.*\/pr-(\d+)-.*/);
+            if (!match) {
+              throw new Error(`Could not extract PR number from ref: ${context.payload.ref}`);
+            }
+            const prNumber = parseInt(match[1], 10);
+
+            const pr = await gihtub.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: prNumber,
+            });
+
+            let runID;
+            for await (const runs of github.paginate.iterator(github.rest.actions.listWorkflowRuns, {
+              owner,
+              repo,
+              workflow_id: workflow,
+              head_sha: pr.data.head.sha,
+            })) {
+              for (const run of runs.data) {
+                if (run.conclution === 'success' || run.status === 'success') {
+                  runID = run.id;
+                  break;
+                }
+              }
+            }
+            if (!runID) {
+              throw new Error(`No successful workflow run found for PR #${prNumber}`);
+            }
+
+            let artifactID;
+            for await (const artifacts of github.paginate.iterator(github.rest.actions.listWorkflowRunArtifacts, {
+              owner,
+              repo,
+              run_id: runID,
+            })) {
+              for (const artifact of artifacts.data) {
+                if (artifact.name === artifactName) {
+                  artifactID = artifact.id;
+                  break;
+                }
+              }
+            }
+            if (!artifactID) {
+              return {
+                found_artifact: false,
+                pr_number: prNumber,
+                artifact_id: null,
+              };
+            }
+            return {
+              found_artifact: true,
+              pr_number: prNumber,
+              artifact_id: artifactID,
+            };
+
   apply:
     runs-on: ubuntu-latest
+    needs: [find-plan]
+    if: ${{ needs.find-plan.outputs.found_artifact == 'true' }}
     permissions:
       id-token: write
       contents: read
@@ -23,25 +97,12 @@ jobs:
         with:
           aqua_version: v2.50.0
 
-      - name: Extract PR number
-        id: pr-number
-        run: |
-          pr_number=$(echo "$GITHUB_REF" | sed -n 's#refs/heads/gh-readonly-queue/.*/pr-\([0-9]*\)-.*#\1#p')
-          if [[ -z "$pr_number" ]]; then
-            echo "Could not extract PR number from ref: $GITHUB_REF"
-            exit 1
-          fi
-          echo "Original PR Number: $pr_number"
-          echo "pr_number=$pr_number" >> "$GITHUB_OUTPUT"
       - name: Download Terraform Plan
         id: download-tfplan
-        uses: dawidd6/action-download-artifact@v9
+        uses: actions/download-artifact@v4.0.0
         with:
-          name: tfplan-${{ inputs.target }}
-          workflow: on-pull-request.yaml
-          pr: ${{ steps.pr-number.outputs.pr_number }}
+          artifact_ids: ${{ needs.find-plan.outputs.artifact_id }}
           path: terraform/${{ inputs.target }}
-          if_no_artifact_found: ignore
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
@@ -57,5 +118,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          tfcmt apply --pr '${{ steps.pr-number.outputs.pr-number }}' --var 'target:${{ inputs.target }}' \
+          tfcmt apply --pr '${{ needs.find-plan.outputs.pr_number }}' --var 'target:${{ inputs.target }}' \
             -- terraform apply -no-color tfplan
