@@ -43,3 +43,9 @@ resource "google_service_account_iam_member" "gha_terraform_apply_infra_repo" {
   role               = "roles/iam.workloadIdentityUser"
   member             = "principalSet://iam.googleapis.com/${local.github_pool_name}/attribute.repository/tosuke-homelab/infra"
 }
+
+resource "google_service_account_iam_member" "gha_terraform_apply_infra_apply_job" {
+  service_account_id = google_service_account.gha_terraform_apply.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${local.github_pool_name}/attribute.job_workflow_ref/tosuke-homelab/infra/.github/workflows/wf-terraform-apply.yaml@refs/heads/main"
+}
