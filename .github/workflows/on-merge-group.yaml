@@ -55,12 +55,14 @@ jobs:
           echo "Original PR Number: $pr_number"
           echo "pr_number=$pr_number" >> "$GITHUB_OUTPUT"
       - name: Download Terraform Plan
+        id: download-tfplan
         uses: dawidd6/action-download-artifact@v9
         with:
           name: tfplan-${{ matrix.target }}
-          workflow_search: true
+          workflow: Terraform Plan
           pr: ${{ steps.pr-number.outputs.pr_number }}
           path: terraform/${{ matrix.target }}
+          if_no_artifact_found: ignore
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@ba79af03959ebeac9769e648f473a284504d9193 # v2.1.10
@@ -71,7 +73,10 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      - name: Terraform Plan & PR Comment
+      - name: Terraform Apply & PR Comment
+        if: ${{ steps.download-tfplan.outputs.found_artifact == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: tfcmt apply --var 'target:${{ matrix.target }}' -- terraform apply -no-color tfplan
+        run: |
+          tfcmt apply --pr '${{ steps.pr-number.outputs.pr-number }}' --var 'target:${{ matrix.target }}' \
+            -- terraform apply -no-color tfplan
