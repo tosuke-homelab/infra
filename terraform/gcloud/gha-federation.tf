@@ -15,8 +15,9 @@ resource "google_iam_workload_identity_pool_provider" "github_actions" {
     issuer_uri = "https://token.actions.githubusercontent.com"
   }
   attribute_mapping = {
-    "google.subject"       = "assertion.sub"
-    "attribute.repository" = "assertion.repository"
+    "google.subject"             = "assertion.sub"
+    "attribute.repository"       = "assertion.repository"
+    "attribute.job_workflow_ref" = "assertion.job_workflow_ref"
   }
   attribute_condition = "assertion.repository.startsWith('tosuke-homelab/')"
 }
