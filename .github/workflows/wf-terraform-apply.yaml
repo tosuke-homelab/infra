@@ -10,26 +10,31 @@ jobs:
   find-plan:
     runs-on: ubuntu-latest
     outputs:
-      pr_number: ${{ fromJSON(steps.find-plan-run.outputs.result).pr_number }}
-      found_artifact: ${{ fromJSON(steps.find-plan-run.outputs.result).found_artifact }}
-      artifact_id: ${{ fromJSON(steps.find-plan-run.outputs.result).artifact_id }}
+      pr_number: ${{ steps.pr-number.outputs.result }}
+      artifact_id: ${{ steps.plan-artifact.outputs.result }}
     steps:
+      - name: Parse PR Number
+        id: pr-number
+        uses: actions/github-script@v7.0.1
+        with:
+          result-encoding: string
+          script: |
+            const match = context.ref.match(/refs\/heads\/gh-readonly-queue\/.*\/pr-(\d+)-.*/);
+            if (!match) {
+              throw new Error(`Could not extract PR number from ref: ${context.payload.ref}`);
+            }
+            return match[1];
       - name: Find tfplan for target
-        id: find-plan-run
+        id: plan-artifact
         uses: actions/github-script@v7.0.1
         with:
           script: |
             const { owner, repo } = context.repo;
             const workflow = 'on-pull-request.yaml';
             const artifactName = `tfplan-${{ inputs.target }}`;
+            const prNumber = parseInt("${{ steps.pr-number.outputs.result }}", 10);
 
-            const match = context.payload.ref.match(/refs\/heads\/gh-readonly-queue\/.*\/pr-(\d+)-.*/);
-            if (!match) {
-              throw new Error(`Could not extract PR number from ref: ${context.payload.ref}`);
-            }
-            const prNumber = parseInt(match[1], 10);
-
-            const pr = await gihtub.rest.pulls.get({
+            const pr = await github.rest.pulls.get({
               owner,
               repo,
               pull_number: prNumber,
@@ -43,7 +48,7 @@ jobs:
               head_sha: pr.data.head.sha,
             })) {
               for (const run of runs.data) {
-                if (run.conclution === 'success' || run.status === 'success') {
+                if (run.conclusion === 'success' || run.status === 'completed') {
                   runID = run.id;
                   break;
                 }
@@ -53,7 +58,7 @@ jobs:
               throw new Error(`No successful workflow run found for PR #${prNumber}`);
             }
 
-            let artifactID;
+            let artifactID = "";
             for await (const artifacts of github.paginate.iterator(github.rest.actions.listWorkflowRunArtifacts, {
               owner,
               repo,
@@ -66,23 +71,12 @@ jobs:
                 }
               }
             }
-            if (!artifactID) {
-              return {
-                found_artifact: false,
-                pr_number: prNumber,
-                artifact_id: null,
-              };
-            }
-            return {
-              found_artifact: true,
-              pr_number: prNumber,
-              artifact_id: artifactID,
-            };
+            return artifactID;
 
   apply:
     runs-on: ubuntu-latest
     needs: [find-plan]
-    if: ${{ needs.find-plan.outputs.found_artifact == 'true' }}
+    if: ${{ needs.find-plan.outputs.artifact_id != '' }}
     permissions:
       id-token: write
       contents: read
@@ -99,7 +93,7 @@ jobs:
 
       - name: Download Terraform Plan
         id: download-tfplan
-        uses: actions/download-artifact@v4.0.0
+        uses: actions/download-artifact@v4.3.0
         with:
           artifact_ids: ${{ needs.find-plan.outputs.artifact_id }}
           path: terraform/${{ inputs.target }}
