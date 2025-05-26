@@ -47,3 +47,5 @@ jobs:
     uses: ./.github/workflows/wf-terraform-plan.yaml
     with:
       target: ${{ matrix.target }}
+    secrets:
+      LINODE_PLAN_TOKEN: ${{ secrets.LINODE_PLAN_TOKEN }}

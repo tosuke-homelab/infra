@@ -6,6 +6,9 @@ on:
       target:
         required: true
         type: string
+    secrets:
+      LINODE_PLAN_TOKEN:
+        required: true
 
 jobs:
   plan:
