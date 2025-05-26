@@ -5,6 +5,9 @@ on:
       target:
         required: true
         type: string
+    secrets:
+      LINODE_APPLY_TOKEN:
+        required: false
 
 jobs:
   find-plan:
@@ -79,8 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [find-plan]
     if: ${{ needs.find-plan.outputs.artifact_url != '' }}
-    environment:
-      name: Apply
+    environment: Apply
     permissions:
       id-token: write
       contents: read

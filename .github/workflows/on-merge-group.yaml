@@ -42,3 +42,4 @@ jobs:
     uses: tosuke-homelab/infra/.github/workflows/wf-terraform-apply.yaml@main
     with:
       target: ${{ matrix.target }}
+    secrets: inherit
