@@ -5,7 +5,14 @@
     "github>aquaproj/aqua-renovate-config",
     "helpers:pinGitHubActionDigests"
   ],
+  "timezone": "Asia/Tokyo",
+  "prHourlyLimit": 10,
+  "platformAutomerge": true,
   "packageRules": [
+    {
+      "matchPackageNames": ["aquaproj/aqua-registry"],
+      "automerge": true
+    },
     {
       "matchManagers": ["terraform"],
       "groupName": "terraform dependencies"
@@ -14,7 +21,5 @@
       "matchManagers": ["github-actions"],
       "groupName": "github actions"
     }
-  ],
-  "timezone": "Asia/Tokyo",
-  "prHourlyLimit": 10
+  ]
 }
