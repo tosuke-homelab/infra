@@ -36,6 +36,7 @@ jobs:
       - name: Terraform Plan & PR Comment
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LINODE_TOKEN: ${{ secrets.LINODE_PLAN_TOKEN }}
         run: tfcmt plan --patch --skip-no-changes --var 'target:${{ inputs.target }}' -- terraform plan -no-color -out=tfplan
 
       - name: Upload Terraform Plan

@@ -79,6 +79,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [find-plan]
     if: ${{ needs.find-plan.outputs.artifact_url != '' }}
+    environment:
+      name: Apply
     permissions:
       id-token: write
       contents: read
@@ -116,6 +118,7 @@ jobs:
       - name: Terraform Apply & PR Comment
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LINODE_TOKEN: ${{ secrets.LINODE_APPLY_TOKEN }}
         run: |
           tfcmt apply --pr '${{ needs.find-plan.outputs.pr_number }}' --var 'target:${{ inputs.target }}' \
             -- terraform apply -no-color tfplan
