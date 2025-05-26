@@ -24,3 +24,7 @@ jobs:
               - aqua.yaml
               - .github/workflows/**
               - terraform/gcloud/**
+            linode:
+              - aqua.yaml
+              - .github/workflows/**
+              - terraform/linode/**

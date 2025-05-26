@@ -22,6 +22,7 @@ jobs:
   terraform-lint:
     name: Terraform Lint
     needs: [changes]
+    if: ${{ needs.changes.outputs.terraform-targets != '[]' }}
     strategy:
       fail-fast: false
       matrix:
@@ -33,6 +34,7 @@ jobs:
   terraform-apply:
     name: Terraform Apply
     needs: [changes]
+    if: ${{ needs.changes.outputs.terraform-targets != '[]' }}
     strategy:
       fail-fast: false
       matrix:
