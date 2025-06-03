@@ -47,4 +47,4 @@ jobs:
         with:
           name: tfplan-${{ inputs.target }}
           path: terraform/${{ inputs.target }}/tfplan
-          retention-days: 1
+          retention-days: 14
