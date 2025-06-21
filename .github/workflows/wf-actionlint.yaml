@@ -25,7 +25,7 @@ jobs:
       - uses: aquaproj/aqua-installer@9ebf656952a20c45a5d66606f083ff34f58b8ce0 # v4.0.0
         if: ${{ steps.filter.outputs.actionlint == 'true' }}
         with:
-          aqua_version: v2.53.1
+          aqua_version: v2.53.2
       - name: Run actionlint
         if: ${{ steps.filter.outputs.actionlint == 'true' }}
         uses: suzuki-shunsuke/github-action-actionlint@4f0298e8f8b13fffbdc13207463d65e92205ad0c # v0.1.5
