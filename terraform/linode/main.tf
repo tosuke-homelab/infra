@@ -8,7 +8,7 @@ terraform {
   required_providers {
     linode = {
       source  = "linode/linode"
-      version = "2.41.0"
+      version = "3.0.0"
     }
     http = {
       source  = "hashicorp/http"
