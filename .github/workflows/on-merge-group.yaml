@@ -39,7 +39,7 @@ jobs:
       fail-fast: false
       matrix:
         target: ${{ fromJSON(needs.changes.outputs.terraform-targets) }}
-    uses: tosuke-homelab/infra/.github/workflows/wf-terraform-apply.yaml@main
+    uses: tosuke-homelab/infra/.github/workflows/wf-terraform-apply.yaml@b632d498e1c2383613aec9b4e97a05a590217ff6 # main
     with:
       target: ${{ matrix.target }}
     secrets: inherit
